@@ -59,6 +59,9 @@ app.use(bodyParser.json());
 // Load users
 const users = JSON.parse(fs.readFileSync(path.join(__dirname, 'users.json'), 'utf8'));
 
+
+
+
 // Login route
 app.post('/login', (req, res) => {
   const { username, password } = req.body;
@@ -86,4 +89,12 @@ io.on('connection', (socket) => {
 
 server.listen(5000, () => {
   console.log('🚀 Server running on http://localhost:5000');
+});
+
+
+// Serve frontend from React build folder
+app.use(express.static(path.join(__dirname, "../client/build")));
+
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "../client/build/index.html"));
 });
