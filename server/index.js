@@ -47,7 +47,7 @@ const server = http.createServer(app);
 
 const io = socketIo(server, {
   cors: {
-    origin: 'http://localhost:3000',
+    origin: process.env.CLIENT_URL || 'http://localhost:3000',
     methods: ['GET', 'POST']
   }
 });
@@ -57,10 +57,7 @@ app.use(cors());
 app.use(bodyParser.json());
 
 // Load users
-const users = JSON.parse(fs.readFileSync(path.join(__dirname, 'users.json'), 'utf8'));
-
-
-
+const users = JSON.parse(fs.readFileSync(path.join(__dirname, 'users.json'), 'utf8')) || [];
 
 // Login route
 app.post('/login', (req, res) => {
@@ -87,14 +84,15 @@ io.on('connection', (socket) => {
   });
 });
 
-server.listen(5000, () => {
-  console.log('🚀 Server running on http://localhost:5000');
-});
-
-
 // Serve frontend from React build folder
 app.use(express.static(path.join(__dirname, "../client/build")));
 
-app.get("*", (req, res) => {
+app.get("/*", (req, res) => {
   res.sendFile(path.join(__dirname, "../client/build/index.html"));
+});
+
+// Start server
+const PORT = process.env.PORT || 5000;
+server.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
 });
