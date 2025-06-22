@@ -44,60 +44,40 @@ const bodyParser = require('body-parser');
 const app = express();
 const server = http.createServer(app);
 
+const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000';
 const io = socketIo(server, {
-  cors: {
-    origin: process.env.CLIENT_URL || 'http://localhost:3000',
-    methods: ['GET', 'POST']
-  }
+  cors: { origin: CLIENT_URL, methods: ['GET','POST'] }
 });
 
-// Middlewares
-app.use(cors());
+app.use(cors({ origin: CLIENT_URL }));
 app.use(bodyParser.json());
 
-// Load users
 let users = [];
 try {
-  const data = fs.readFileSync(path.join(__dirname, 'users.json'), 'utf8');
-  users = JSON.parse(data);
-} catch (err) {
-  console.error("Error reading users.json:", err);
+  users = JSON.parse(fs.readFileSync(path.join(__dirname, 'users.json'), 'utf8'));
+} catch (e) {
+  console.error("Failed to load users.json:", e.message);
 }
 
-// Login route
 app.post('/login', (req, res) => {
   const { username, password } = req.body;
   const user = users.find(u => u.username === username && u.password === password);
-
-  if (user) {
-    res.status(200).json({ success: true });
-  } else {
-    res.status(401).json({ success: false, message: "Invalid credentials" });
-  }
+  return user
+    ? res.json({ success: true })
+    : res.status(401).json({ success: false });
 });
 
-// Socket handling
-io.on('connection', (socket) => {
-  console.log('⚡ A user connected:', socket.id);
-
-  socket.on('chat message', (msg) => {
-    socket.broadcast.emit('chat message', msg);
-  });
-
-  socket.on('disconnect', () => {
-    console.log('❌ User disconnected:', socket.id);
-  });
+io.on('connection', socket => {
+  socket.on('chat message', msg => socket.broadcast.emit('chat message', msg));
 });
 
-// Serve frontend
-app.use(express.static(path.join(__dirname, '../client/build')));
+const clientPath = path.join(__dirname, '..', 'client', 'build');
+app.use(express.static(clientPath));
 
+// ✅ THIS MUST be exactly "*", not "/*" or "/*/"
 app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, '../client/build/index.html'));
+  res.sendFile(path.join(clientPath, 'index.html'));
 });
 
-// Start server
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
+server.listen(PORT, () => console.log(`Server on port ${PORT}`));
