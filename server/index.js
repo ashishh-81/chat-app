@@ -45,33 +45,42 @@ const bodyParser = require('body-parser');
 const app = express();
 const server = http.createServer(app);
 
+// CORS setup
+const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000';
 const io = socketIo(server, {
   cors: {
-    origin: process.env.CLIENT_URL || 'http://localhost:3000',
-    methods: ['GET', 'POST']
-  }
+    origin: CLIENT_URL,
+    methods: ['GET', 'POST'],
+  },
 });
 
-// Middlewares
-app.use(cors());
+app.use(cors({ origin: CLIENT_URL }));
 app.use(bodyParser.json());
 
-// Load users
-const users = JSON.parse(fs.readFileSync(path.join(__dirname, 'users.json'), 'utf8')) || [];
+// Read users.json (with fallback to empty array)
+let users = [];
+try {
+  const usersPath = path.join(__dirname, 'users.json');
+  if (fs.existsSync(usersPath)) {
+    users = JSON.parse(fs.readFileSync(usersPath, 'utf8'));
+  }
+} catch (err) {
+  console.error("Error loading users.json:", err.message);
+}
 
-// Login route
+// Login API
 app.post('/login', (req, res) => {
   const { username, password } = req.body;
-  const user = users.find(u => u.username === username && u.password === password);
+  const user = users.find((u) => u.username === username && u.password === password);
 
   if (user) {
     res.status(200).json({ success: true });
   } else {
-    res.status(401).json({ success: false, message: "Invalid credentials" });
+    res.status(401).json({ success: false, message: 'Invalid credentials' });
   }
 });
 
-// Socket handling
+// WebSocket events
 io.on('connection', (socket) => {
   console.log('⚡ A user connected:', socket.id);
 
@@ -84,10 +93,12 @@ io.on('connection', (socket) => {
   });
 });
 
+// Serve frontend from React build
+const clientBuildPath = path.join(__dirname, '..', 'client', 'build');
 // Serve frontend from React build folder
 app.use(express.static(path.join(__dirname, "../client/build")));
 
-app.get("/*", (req, res) => {
+app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "../client/build/index.html"));
 });
 
