@@ -33,7 +33,6 @@ server.listen(5000, () => {
   console.log('🚀 Server running on http://localhost:5000');
 });
 */
-
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
@@ -45,42 +44,39 @@ const bodyParser = require('body-parser');
 const app = express();
 const server = http.createServer(app);
 
-// CORS setup
-const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000';
 const io = socketIo(server, {
   cors: {
-    origin: CLIENT_URL,
-    methods: ['GET', 'POST'],
-  },
+    origin: process.env.CLIENT_URL || 'http://localhost:3000',
+    methods: ['GET', 'POST']
+  }
 });
 
-app.use(cors({ origin: CLIENT_URL }));
+// Middlewares
+app.use(cors());
 app.use(bodyParser.json());
 
-// Read users.json (with fallback to empty array)
+// Load users
 let users = [];
 try {
-  const usersPath = path.join(__dirname, 'users.json');
-  if (fs.existsSync(usersPath)) {
-    users = JSON.parse(fs.readFileSync(usersPath, 'utf8'));
-  }
+  const data = fs.readFileSync(path.join(__dirname, 'users.json'), 'utf8');
+  users = JSON.parse(data);
 } catch (err) {
-  console.error("Error loading users.json:", err.message);
+  console.error("Error reading users.json:", err);
 }
 
-// Login API
+// Login route
 app.post('/login', (req, res) => {
   const { username, password } = req.body;
-  const user = users.find((u) => u.username === username && u.password === password);
+  const user = users.find(u => u.username === username && u.password === password);
 
   if (user) {
     res.status(200).json({ success: true });
   } else {
-    res.status(401).json({ success: false, message: 'Invalid credentials' });
+    res.status(401).json({ success: false, message: "Invalid credentials" });
   }
 });
 
-// WebSocket events
+// Socket handling
 io.on('connection', (socket) => {
   console.log('⚡ A user connected:', socket.id);
 
@@ -93,13 +89,11 @@ io.on('connection', (socket) => {
   });
 });
 
-// Serve frontend from React build
-const clientBuildPath = path.join(__dirname, '..', 'client', 'build');
-// Serve frontend from React build folder
-app.use(express.static(path.join(__dirname, "../client/build")));
+// Serve frontend
+app.use(express.static(path.join(__dirname, '../client/build')));
 
 app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "../client/build/index.html"));
+  res.sendFile(path.join(__dirname, '../client/build/index.html'));
 });
 
 // Start server

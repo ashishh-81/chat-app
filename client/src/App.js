@@ -205,7 +205,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { io } from "socket.io-client";
 import "./index.css"; // TailwindCSS styles
 
-const socket = io("http://localhost:5000");
+const SERVER_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:5000";
+const socket = io(SERVER_URL);
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -216,17 +217,21 @@ function App() {
   const chatRef = useRef(null);
 
   const handleLogin = async () => {
-    const response = await fetch("http://localhost:5000/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password }),
-    });
+    try {
+      const response = await fetch(`${SERVER_URL}/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
 
-    const result = await response.json();
-    if (result.success) {
-      setIsLoggedIn(true);
-    } else {
-      alert("Invalid username or password");
+      const result = await response.json();
+      if (result.success) {
+        setIsLoggedIn(true);
+      } else {
+        alert("Invalid username or password");
+      }
+    } catch (error) {
+      alert("Server not reachable");
     }
   };
 
@@ -336,6 +341,7 @@ function App() {
 }
 
 export default App;
+
 
 
 /*import React from "react";
