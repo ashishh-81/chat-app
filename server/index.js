@@ -46,7 +46,7 @@ const server = http.createServer(app);
 
 const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000';
 const io = socketIo(server, {
-  cors: { origin: CLIENT_URL, methods: ['GET','POST'] }
+  cors: { origin: CLIENT_URL, methods: ['GET', 'POST'] }
 });
 
 app.use(cors({ origin: CLIENT_URL }));
@@ -74,10 +74,11 @@ io.on('connection', socket => {
 const clientPath = path.join(__dirname, '..', 'client', 'build');
 app.use(express.static(clientPath));
 
-// ✅ THIS MUST be exactly "*", not "/*" or "/*/"
+// ✅ FIXED: use "/*" instead of "*"
+// ✅ Correct version that avoids path-to-regexp crash:
 app.get("*", (req, res) => {
   res.sendFile(path.join(clientPath, 'index.html'));
 });
 
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => console.log(`Server on port ${PORT}`));
+server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));

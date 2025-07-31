@@ -9,6 +9,14 @@
   },
   {
     "username": "admin",
-    "password": "adminpass"
+    "password": "admin123"
+  },
+  {
+    "username": "testuser",
+    "password": "testpass"
+  },
+  {
+    "username": "guest",
+    "password": "guest123"
   }
 ]
